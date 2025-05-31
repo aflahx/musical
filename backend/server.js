@@ -129,18 +129,20 @@ app.post('/admin/upload', async (req, res) => {
 // Delete file
 app.delete('/admin/files/:id', async (req, res) => {
   try {
-    const file = await File.findById(req.params.id);
+    const fileId = new mongoose.Types.ObjectId(req.params.id);
+    const file = await File.findById(fileId);
     if (!file) {
       return res.status(404).json({ error: 'File not found' });
     }
 
     const filePath = path.join(uploadsDir, file.filename);
     fs.unlinkSync(filePath);
-    await File.findByIdAndDelete(req.params.id);
-    await Favorite.deleteOne({ fileId: req.params.id });
+    await File.findByIdAndDelete(fileId);
+    await Favorite.deleteOne({ fileId: fileId });
     
     res.json({ success: true });
   } catch (err) {
+    console.error('Delete file error:', err);
     res.status(500).json({ error: err.message });
   }
 });
@@ -148,8 +150,14 @@ app.delete('/admin/files/:id', async (req, res) => {
 // Rename file
 app.put('/admin/files/:id', async (req, res) => {
   try {
+    const fileId = new mongoose.Types.ObjectId(req.params.id);
     const { newFilename } = req.body;
-    const file = await File.findById(req.params.id);
+    
+    if (!newFilename) {
+      return res.status(400).json({ error: 'New filename is required' });
+    }
+
+    const file = await File.findById(fileId);
     
     if (!file) {
       return res.status(404).json({ error: 'File not found' });
@@ -158,12 +166,18 @@ app.put('/admin/files/:id', async (req, res) => {
     const oldPath = path.join(uploadsDir, file.filename);
     const newPath = path.join(uploadsDir, newFilename);
 
+    // Check if a file with the new filename already exists
+    if (fs.existsSync(newPath)) {
+      return res.status(400).json({ error: 'File with this name already exists' });
+    }
+
     fs.renameSync(oldPath, newPath);
     file.filename = newFilename;
     await file.save();
     
     res.json({ success: true });
   } catch (err) {
+    console.error('Rename file error:', err);
     res.status(500).json({ error: err.message });
   }
 });
