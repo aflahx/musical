@@ -171,7 +171,9 @@ h1 {
 
 .file-controls {
   display: flex;
+  flex-direction: row;
   gap: 10px;
+  align-items: center;
   margin-top: 15px;
 }
 
@@ -188,6 +190,7 @@ h1 {
   transition: all var(--transition-speed);
   color: var(--text-color);
   background: var(--background-color);
+  flex-shrink: 0;
 }
 
 .play-btn:hover {
@@ -491,6 +494,10 @@ h1 {
 }
 
 .files-list .file-controls {
+  display: flex;
+  flex-direction: row;
+  gap: 10px;
+  align-items: center;
   margin: 0;
 }
 
