@@ -1,0 +1,611 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Songs</title>
+  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body class="light-theme">
+  <div class="theme-toggle">
+    <button onclick="toggleTheme()" class="theme-btn">
+      <i class="fas fa-sun"></i>
+      <i class="fas fa-moon"></i>
+    </button>
+  </div>
+
+  <div class="container">
+    <h1>Music Player</h1>
+    
+    <div class="controls-section">
+      <div class="search-box">
+        <i class="fas fa-search"></i>
+        <input type="text" id="searchInput" placeholder="Search songs..." oninput="filterFiles()">
+      </div>
+      
+      <div class="sort-options">
+        <select id="sortSelect" onchange="sortFiles()">
+          <option value="name-asc">Name (A-Z)</option>
+          <option value="name-desc">Name (Z-A)</option>
+          <option value="date-desc">Newest First</option>
+          <option value="date-asc">Oldest First</option>
+        </select>
+      </div>
+
+      <div class="view-options">
+        <button onclick="toggleView()" class="view-btn">
+          <i class="fas fa-th-large"></i>
+        </button>
+      </div>
+    </div>
+
+    <div class="tabs">
+      <button class="tab-btn active" onclick="showTab('all')">
+        <i class="fas fa-music"></i>
+        All Songs
+      </button>
+      <button class="tab-btn" onclick="showTab('favorites')">
+        <i class="fas fa-heart"></i>
+        Favorites
+      </button>
+      <button class="tab-btn" onclick="showTab('playlist')">
+        <i class="fas fa-list"></i>
+        Playlist
+      </button>
+    </div>
+
+    <div id="allSongs" class="tab-content active">
+      <div id="files" class="files-grid"></div>
+    </div>
+
+    <div id="favorites" class="tab-content">
+      <div id="favoriteFiles" class="files-grid"></div>
+    </div>
+
+    <div id="playlist" class="tab-content">
+      <div class="playlist-controls">
+        <button onclick="shufflePlaylist()" class="control-btn">
+          <i class="fas fa-random"></i> Shuffle
+        </button>
+        <button onclick="clearPlaylist()" class="control-btn">
+          <i class="fas fa-trash"></i> Clear
+        </button>
+      </div>
+      <div id="playlistFiles" class="files-grid"></div>
+    </div>
+
+    <div id="nowPlaying" class="now-playing">
+      <div class="now-playing-info">
+        <h3>Now Playing</h3>
+        <div id="currentSong"></div>
+      </div>
+      <div class="now-playing-controls">
+        <button onclick="previousTrack()" class="control-btn">
+          <i class="fas fa-step-backward"></i>
+        </button>
+        <button onclick="togglePlayback()" class="playback-btn">
+          <i class="fas fa-play"></i>
+        </button>
+        <button onclick="nextTrack()" class="control-btn">
+          <i class="fas fa-step-forward"></i>
+        </button>
+        <div class="seek-container">
+          <span id="currentTime">0:00</span>
+          <div class="seek-bar">
+            <div class="seek-progress" id="seekProgress"></div>
+            <input type="range" id="seekSlider" min="0" max="100" value="0" oninput="seekAudio(this.value)">
+          </div>
+          <span id="duration">0:00</span>
+        </div>
+        <div class="volume-control">
+          <i class="fas fa-volume-up"></i>
+          <input type="range" id="volumeSlider" min="0" max="100" value="100" onchange="adjustVolume()">
+        </div>
+      </div>
+    </div>
+
+    <div class="keyboard-shortcuts">
+      <button onclick="toggleShortcuts()" class="shortcuts-btn">
+        <i class="fas fa-keyboard"></i>
+      </button>
+      <div id="shortcutsModal" class="modal">
+        <div class="modal-content">
+          <h2>Keyboard Shortcuts</h2>
+          <div class="shortcuts-list">
+            <div class="shortcut-item">
+              <span class="key">Space</span>
+              <span class="description">Play/Pause</span>
+            </div>
+            <div class="shortcut-item">
+              <span class="key">←</span>
+              <span class="description">Previous Track</span>
+            </div>
+            <div class="shortcut-item">
+              <span class="key">→</span>
+              <span class="description">Next Track</span>
+            </div>
+            <div class="shortcut-item">
+              <span class="key">↑</span>
+              <span class="description">Volume Up</span>
+            </div>
+            <div class="shortcut-item">
+              <span class="key">↓</span>
+              <span class="description">Volume Down</span>
+            </div>
+            <div class="shortcut-item">
+              <span class="key">M</span>
+              <span class="description">Mute/Unmute</span>
+            </div>
+          </div>
+          <button onclick="toggleShortcuts()" class="close-btn">Close</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="share-modal" id="shareModal">
+      <div class="modal-content">
+        <h2>Share Song</h2>
+        <div class="share-options">
+          <div class="share-link">
+            <input type="text" id="shareLink" readonly>
+            <button onclick="copyShareLink()" class="copy-btn">
+              <i class="fas fa-copy"></i> Copy
+            </button>
+          </div>
+          <div class="share-buttons">
+            <button onclick="shareOnWhatsApp()" class="social-share-btn whatsapp">
+              <i class="fab fa-whatsapp"></i> WhatsApp
+            </button>
+            <button onclick="shareOnTelegram()" class="social-share-btn telegram">
+              <i class="fab fa-telegram"></i> Telegram
+            </button>
+            <button onclick="shareOnTwitter()" class="social-share-btn twitter">
+              <i class="fab fa-twitter"></i> Twitter
+            </button>
+          </div>
+        </div>
+        <button onclick="closeShareModal()" class="close-btn">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let currentAudio = null;
+    let currentAudioId = null;
+    let allFiles = [];
+    let playlist = [];
+    let currentPlaylistIndex = -1;
+    let isGridView = true;
+
+    // Load saved theme and playlist on page load
+    document.addEventListener('DOMContentLoaded', () => {
+      const savedTheme = localStorage.getItem('theme') || 'light';
+      document.body.className = `${savedTheme}-theme`;
+      
+      const savedPlaylist = localStorage.getItem('playlist');
+      if (savedPlaylist) {
+        playlist = JSON.parse(savedPlaylist);
+      }
+      
+      loadFiles();
+
+      // Check for shared song in URL
+      const urlParams = new URLSearchParams(window.location.search);
+      const sharedSongId = urlParams.get('song');
+      if (sharedSongId) {
+        // Wait for files to load before playing shared song
+        setTimeout(() => {
+          const sharedFile = allFiles.find(file => file.id === parseInt(sharedSongId));
+          if (sharedFile) {
+            togglePlay(sharedFile.id, sharedFile.filename);
+          }
+        }, 1000);
+      }
+
+      setupKeyboardShortcuts();
+    });
+
+    function setupKeyboardShortcuts() {
+      document.addEventListener('keydown', (e) => {
+        if (e.target.tagName === 'INPUT') return;
+        
+        switch(e.code) {
+          case 'Space':
+            e.preventDefault();
+            togglePlayback();
+            break;
+          case 'ArrowLeft':
+            previousTrack();
+            break;
+          case 'ArrowRight':
+            nextTrack();
+            break;
+          case 'ArrowUp':
+            adjustVolumeByKey(5);
+            break;
+          case 'ArrowDown':
+            adjustVolumeByKey(-5);
+            break;
+          case 'KeyM':
+            toggleMute();
+            break;
+        }
+      });
+    }
+
+    function toggleView() {
+      isGridView = !isGridView;
+      const filesGrid = document.getElementById('files');
+      const favoriteFilesGrid = document.getElementById('favoriteFiles');
+      const playlistFilesGrid = document.getElementById('playlistFiles');
+      
+      [filesGrid, favoriteFilesGrid, playlistFilesGrid].forEach(grid => {
+        grid.className = isGridView ? 'files-grid' : 'files-list';
+      });
+      
+      document.querySelector('.view-btn i').className = isGridView ? 'fas fa-th-large' : 'fas fa-list';
+    }
+
+    function addToPlaylist(file) {
+      if (!playlist.some(item => item.id === file.id)) {
+        playlist.push(file);
+        localStorage.setItem('playlist', JSON.stringify(playlist));
+        updatePlaylistDisplay();
+      }
+    }
+
+    function removeFromPlaylist(fileId) {
+      playlist = playlist.filter(file => file.id !== fileId);
+      localStorage.setItem('playlist', JSON.stringify(playlist));
+      updatePlaylistDisplay();
+    }
+
+    function updatePlaylistDisplay() {
+      const playlistDiv = document.getElementById('playlistFiles');
+      playlistDiv.innerHTML = '';
+      
+      playlist.forEach((file, index) => {
+        const fileElement = createFileElement(file);
+        const removeBtn = document.createElement('button');
+        removeBtn.className = 'remove-btn';
+        removeBtn.innerHTML = '<i class="fas fa-times"></i>';
+        removeBtn.onclick = () => removeFromPlaylist(file.id);
+        fileElement.querySelector('.file-controls').appendChild(removeBtn);
+        playlistDiv.appendChild(fileElement);
+      });
+    }
+
+    function shufflePlaylist() {
+      for (let i = playlist.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [playlist[i], playlist[j]] = [playlist[j], playlist[i]];
+      }
+      localStorage.setItem('playlist', JSON.stringify(playlist));
+      updatePlaylistDisplay();
+    }
+
+    function clearPlaylist() {
+      if (confirm('Are you sure you want to clear the playlist?')) {
+        playlist = [];
+        localStorage.removeItem('playlist');
+        updatePlaylistDisplay();
+      }
+    }
+
+    function previousTrack() {
+      if (playlist.length === 0) return;
+      
+      currentPlaylistIndex = (currentPlaylistIndex - 1 + playlist.length) % playlist.length;
+      const file = playlist[currentPlaylistIndex];
+      togglePlay(file.id, file.filename);
+    }
+
+    function nextTrack() {
+      if (playlist.length === 0) return;
+      
+      currentPlaylistIndex = (currentPlaylistIndex + 1) % playlist.length;
+      const file = playlist[currentPlaylistIndex];
+      togglePlay(file.id, file.filename);
+    }
+
+    function toggleMute() {
+      if (currentAudio) {
+        currentAudio.muted = !currentAudio.muted;
+        const volumeIcon = document.querySelector('.volume-control i');
+        volumeIcon.className = currentAudio.muted ? 'fas fa-volume-mute' : 'fas fa-volume-up';
+      }
+    }
+
+    function adjustVolumeByKey(delta) {
+      if (currentAudio) {
+        const volumeSlider = document.getElementById('volumeSlider');
+        const newVolume = Math.max(0, Math.min(100, parseInt(volumeSlider.value) + delta));
+        volumeSlider.value = newVolume;
+        adjustVolume();
+      }
+    }
+
+    function toggleShortcuts() {
+      const modal = document.getElementById('shortcutsModal');
+      modal.classList.toggle('active');
+    }
+
+    function toggleTheme() {
+      const body = document.body;
+      const currentTheme = body.classList.contains('dark-theme') ? 'dark' : 'light';
+      const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+      
+      body.classList.remove(`${currentTheme}-theme`);
+      body.classList.add(`${newTheme}-theme`);
+      
+      localStorage.setItem('theme', newTheme);
+    }
+
+    function showTab(tabName) {
+      document.querySelectorAll('.tab-content').forEach(tab => {
+        tab.classList.remove('active');
+      });
+      document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.classList.remove('active');
+      });
+      document.getElementById(tabName === 'all' ? 'allSongs' : tabName === 'favorites' ? 'favorites' : 'playlist').classList.add('active');
+      event.target.closest('.tab-btn').classList.add('active');
+    }
+
+    function loadFiles() {
+      fetch('/files')
+        .then(response => response.json())
+        .then(files => {
+          allFiles = files;
+          displayFiles(files);
+        });
+    }
+
+    function displayFiles(files) {
+      const filesDiv = document.getElementById('files');
+      const favoritesDiv = document.getElementById('favoriteFiles');
+      filesDiv.innerHTML = '';
+      favoritesDiv.innerHTML = '';
+
+      files.forEach(file => {
+        const fileElement = createFileElement(file);
+        filesDiv.appendChild(fileElement);
+
+        if (file.isFavorite) {
+          const favoriteElement = createFileElement(file);
+          favoritesDiv.appendChild(favoriteElement);
+        }
+      });
+    }
+
+    function createFileElement(file) {
+      const fileElement = document.createElement('div');
+      fileElement.className = 'file-item';
+      fileElement.innerHTML = `
+        <div class="file-info">
+          <div class="file-header">
+            <h3>${file.filename}</h3>
+            <span class="upload-date">${new Date(file.uploadDate).toLocaleDateString()}</span>
+          </div>
+          <div class="file-controls">
+            <button onclick="togglePlay(${file.id}, '${file.filename}')" class="play-btn" id="playBtn-${file.id}">
+              <i class="fas fa-play"></i>
+            </button>
+            <button onclick="toggleFavorite(${file.id}, ${file.isFavorite})" class="favorite-btn ${file.isFavorite ? 'active' : ''}">
+              <i class="fas fa-heart"></i>
+            </button>
+            <button onclick="addToPlaylist(${JSON.stringify(file).replace(/"/g, '&quot;')})" class="playlist-btn">
+              <i class="fas fa-plus"></i>
+            </button>
+            <button onclick="shareSong(${file.id}, '${file.filename}')" class="share-btn">
+              <i class="fas fa-share-alt"></i>
+            </button>
+            <a href="/uploads/${file.filename}" download class="download-btn">
+              <i class="fas fa-download"></i>
+            </a>
+          </div>
+        </div>
+      `;
+      return fileElement;
+    }
+
+    function filterFiles() {
+      const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+      const filteredFiles = allFiles.filter(file => 
+        file.filename.toLowerCase().includes(searchTerm)
+      );
+      displayFiles(filteredFiles);
+    }
+
+    function sortFiles() {
+      const sortValue = document.getElementById('sortSelect').value;
+      const sortedFiles = [...allFiles].sort((a, b) => {
+        switch(sortValue) {
+          case 'name-asc':
+            return a.filename.localeCompare(b.filename);
+          case 'name-desc':
+            return b.filename.localeCompare(a.filename);
+          case 'date-desc':
+            return new Date(b.uploadDate) - new Date(a.uploadDate);
+          case 'date-asc':
+            return new Date(a.uploadDate) - new Date(b.uploadDate);
+          default:
+            return 0;
+        }
+      });
+      displayFiles(sortedFiles);
+    }
+
+    function togglePlay(id, filename) {
+      const playBtn = document.getElementById(`playBtn-${id}`);
+      
+      if (currentAudioId === id) {
+        if (currentAudio.paused) {
+          currentAudio.play();
+          playBtn.innerHTML = '<i class="fas fa-pause"></i>';
+          document.querySelector('.playback-btn i').className = 'fas fa-pause';
+        } else {
+          currentAudio.pause();
+          playBtn.innerHTML = '<i class="fas fa-play"></i>';
+          document.querySelector('.playback-btn i').className = 'fas fa-play';
+        }
+      } else {
+        if (currentAudio) {
+          currentAudio.pause();
+          const oldPlayBtn = document.getElementById(`playBtn-${currentAudioId}`);
+          if (oldPlayBtn) {
+            oldPlayBtn.innerHTML = '<i class="fas fa-play"></i>';
+          }
+        }
+
+        const audio = new Audio(`/uploads/${filename}`);
+        currentAudio = audio;
+        currentAudioId = id;
+
+        const nowPlaying = document.getElementById('currentSong');
+        nowPlaying.innerHTML = `<p>${filename}</p>`;
+
+        playBtn.innerHTML = '<i class="fas fa-pause"></i>';
+        document.querySelector('.playback-btn i').className = 'fas fa-pause';
+
+        // Add timeupdate event listener for seek bar
+        audio.addEventListener('timeupdate', updateSeekBar);
+        // Add loadedmetadata event listener for duration
+        audio.addEventListener('loadedmetadata', () => {
+          document.getElementById('duration').textContent = formatTime(audio.duration);
+        });
+
+        audio.addEventListener('play', () => {
+          playBtn.innerHTML = '<i class="fas fa-pause"></i>';
+          document.querySelector('.playback-btn i').className = 'fas fa-pause';
+        });
+
+        audio.addEventListener('pause', () => {
+          playBtn.innerHTML = '<i class="fas fa-play"></i>';
+          document.querySelector('.playback-btn i').className = 'fas fa-play';
+        });
+
+        audio.addEventListener('ended', () => {
+          playBtn.innerHTML = '<i class="fas fa-play"></i>';
+          document.querySelector('.playback-btn i').className = 'fas fa-play';
+          currentAudio = null;
+          currentAudioId = null;
+          document.getElementById('currentSong').innerHTML = '';
+          resetSeekBar();
+        });
+
+        audio.play();
+      }
+    }
+
+    function updateSeekBar() {
+      if (currentAudio) {
+        const seekSlider = document.getElementById('seekSlider');
+        const seekProgress = document.getElementById('seekProgress');
+        const currentTime = document.getElementById('currentTime');
+        
+        const percent = (currentAudio.currentTime / currentAudio.duration) * 100;
+        seekSlider.value = percent;
+        seekProgress.style.width = `${percent}%`;
+        currentTime.textContent = formatTime(currentAudio.currentTime);
+      }
+    }
+
+    function seekAudio(value) {
+      if (currentAudio) {
+        const seekTime = (value / 100) * currentAudio.duration;
+        currentAudio.currentTime = seekTime;
+      }
+    }
+
+    function resetSeekBar() {
+      document.getElementById('seekSlider').value = 0;
+      document.getElementById('seekProgress').style.width = '0%';
+      document.getElementById('currentTime').textContent = '0:00';
+      document.getElementById('duration').textContent = '0:00';
+    }
+
+    function formatTime(seconds) {
+      const minutes = Math.floor(seconds / 60);
+      seconds = Math.floor(seconds % 60);
+      return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+    }
+
+    function togglePlayback() {
+      if (currentAudio) {
+        togglePlay(currentAudioId, currentAudio.src.split('/').pop());
+      }
+    }
+
+    function adjustVolume() {
+      if (currentAudio) {
+        const volume = document.getElementById('volumeSlider').value / 100;
+        currentAudio.volume = volume;
+      }
+    }
+
+    function toggleFavorite(id, isFavorite) {
+      fetch(`/files/${id}/favorite`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ isFavorite: !isFavorite })
+      })
+      .then(response => response.json())
+      .then(data => {
+        if (data.success) {
+          loadFiles();
+        }
+      });
+    }
+
+    function shareSong(id, filename) {
+      const shareLink = `${window.location.origin}/share/${id}`;
+      document.getElementById('shareLink').value = shareLink;
+      document.getElementById('shareModal').classList.add('active');
+    }
+
+    function closeShareModal() {
+      document.getElementById('shareModal').classList.remove('active');
+    }
+
+    function copyShareLink() {
+      const shareLink = document.getElementById('shareLink');
+      shareLink.select();
+      document.execCommand('copy');
+      
+      const copyBtn = document.querySelector('.copy-btn');
+      const originalText = copyBtn.innerHTML;
+      copyBtn.innerHTML = '<i class="fas fa-check"></i> Copied!';
+      setTimeout(() => {
+        copyBtn.innerHTML = originalText;
+      }, 2000);
+    }
+
+    function shareOnWhatsApp() {
+      const shareLink = document.getElementById('shareLink').value;
+      window.open(`https://wa.me/?text=Check out this song: ${encodeURIComponent(shareLink)}`);
+    }
+
+    function shareOnTelegram() {
+      const shareLink = document.getElementById('shareLink').value;
+      window.open(`https://t.me/share/url?url=${encodeURIComponent(shareLink)}`);
+    }
+
+    function shareOnTwitter() {
+      const shareLink = document.getElementById('shareLink').value;
+      window.open(`https://twitter.com/intent/tweet?text=Check out this song:&url=${encodeURIComponent(shareLink)}`);
+    }
+
+    // Close modal when clicking outside
+    window.onclick = function(event) {
+      const modal = document.getElementById('shareModal');
+      if (event.target === modal) {
+        closeShareModal();
+      }
+    }
+  </script>
+</body>
+</html> 
