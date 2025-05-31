@@ -353,17 +353,17 @@
       event.target.closest('.tab-btn').classList.add('active');
     }
 
-    function loadFiles() {
-      fetch('/files')
-        .then(response => response.json())
-        .then(files => {
-          allFiles = files;
-          displayFiles(allFiles);
-          loadFavorites();
-        })
-        .catch(error => {
-          console.error('Error loading files:', error);
-        });
+    async function loadFiles() {
+      try {
+        const response = await fetch('/files');
+        const files = await response.json();
+        console.log('Files received from server:', files); // Debug log
+        allFiles = files;
+        displayFiles(allFiles);
+        loadFavorites();
+      } catch (err) {
+        console.error('Error loading files:', err);
+      }
     }
 
     function displayFiles(filesToDisplay) {
@@ -380,22 +380,44 @@
             <span class="upload-date">${new Date(file.uploadDate).toLocaleDateString()}</span>
           </div>
           <div class="file-actions">
-            <button onclick="togglePlay('${file._id}', '${file.filename}')" class="play-btn">
+            <button data-id="${file._id}" class="play-btn">
               <i class="fas fa-play"></i>
             </button>
-            <button onclick="addToPlaylist({ id: '${file._id}', filename: '${file.filename}' })" class="playlist-btn">
+            <button data-id="${file._id}" class="playlist-btn">
               <i class="fas fa-list-ul"></i>
             </button>
-            <button onclick="toggleFavorite('${file._id}')" class="favorite-btn ${file.isFavorite ? 'active' : ''}">
+            <button data-id="${file._id}" class="favorite-btn ${file.isFavorite ? 'active' : ''}">
               <i class="fas fa-heart"></i>
             </button>
-            <button onclick="shareSong('${file._id}')" class="share-btn">
+            <button data-id="${file._id}" class="share-btn">
               <i class="fas fa-share-alt"></i>
             </button>
           </div>
         `;
         fileList.appendChild(fileElement);
       });
+
+      // Add event listeners using delegation
+      fileList.addEventListener('click', handleFileAction);
+    }
+
+    function handleFileAction(event) {
+      const targetButton = event.target.closest('button');
+      if (!targetButton) return;
+
+      const fileId = targetButton.dataset.id;
+      const file = allFiles.find(f => f.id === fileId);
+      if (!file) return;
+
+      if (targetButton.classList.contains('play-btn')) {
+        togglePlay(file.id, file.filename, targetButton); // Pass the clicked button
+      } else if (targetButton.classList.contains('playlist-btn')) {
+        addToPlaylist({ id: file.id, filename: file.filename });
+      } else if (targetButton.classList.contains('favorite-btn')) {
+        toggleFavorite(file.id);
+      } else if (targetButton.classList.contains('share-btn')) {
+        shareSong(file.id);
+      }
     }
 
     function loadFavorites() {
@@ -431,16 +453,16 @@
             <span class="upload-date">${new Date(file.uploadDate).toLocaleDateString()}</span>
           </div>
           <div class="file-actions">
-            <button onclick="togglePlay('${file._id}', '${file.filename}')" class="play-btn">
+            <button data-id="${file._id}" class="play-btn">
               <i class="fas fa-play"></i>
             </button>
-            <button onclick="addToPlaylist({ id: '${file._id}', filename: '${file.filename}' })" class="playlist-btn">
+            <button data-id="${file._id}" class="playlist-btn">
               <i class="fas fa-list-ul"></i>
             </button>
-            <button onclick="toggleFavorite('${file._id}')" class="favorite-btn active">
+            <button data-id="${file._id}" class="favorite-btn active">
               <i class="fas fa-heart"></i>
             </button>
-            <button onclick="shareSong('${file._id}')" class="share-btn">
+            <button data-id="${file._id}" class="share-btn">
               <i class="fas fa-share-alt"></i>
             </button>
           </div>
@@ -476,65 +498,73 @@
       displayFiles(sortedFiles);
     }
 
-    function togglePlay(id, filename) {
-      const playBtn = document.getElementById(`playBtn-${id}`);
+    function togglePlay(fileId, filename, clickedButton = null) {
+      console.log('Attempting to play file:', { fileId, filename }); // Debug log
+      const file = allFiles.find(f => f.id === fileId);
+      console.log('File object found:', file); // Debug log
       
-      if (currentAudioId === id) {
+      const globalPlaybackBtnIcon = document.querySelector('.playback-btn i');
+
+      if (currentAudio && currentAudioId === fileId) {
+        // Currently playing the same song
         if (currentAudio.paused) {
           currentAudio.play();
-          playBtn.innerHTML = '<i class="fas fa-pause"></i>';
-          document.querySelector('.playback-btn i').className = 'fas fa-pause';
+          if (clickedButton) clickedButton.querySelector('i').className = 'fas fa-pause';
+          if (globalPlaybackBtnIcon) globalPlaybackBtnIcon.className = 'fas fa-pause';
         } else {
           currentAudio.pause();
-          playBtn.innerHTML = '<i class="fas fa-play"></i>';
-          document.querySelector('.playback-btn i').className = 'fas fa-play';
+          if (clickedButton) clickedButton.querySelector('i').className = 'fas fa-play';
+          if (globalPlaybackBtnIcon) globalPlaybackBtnIcon.className = 'fas fa-play';
         }
       } else {
+        // Playing a new song
         if (currentAudio) {
+          // Pause the previous song and reset its button icon
           currentAudio.pause();
-          const oldPlayBtn = document.getElementById(`playBtn-${currentAudioId}`);
-          if (oldPlayBtn) {
-            oldPlayBtn.innerHTML = '<i class="fas fa-play"></i>';
+          const previousButton = document.querySelector(`.file-item button.play-btn[data-id="${currentAudioId}"]`);
+          if (previousButton) {
+              previousButton.querySelector('i').className = 'fas fa-play';
           }
-        }
-
-        const audio = new Audio(`/uploads/${filename}`);
-        currentAudio = audio;
-        currentAudioId = id;
-
-        const nowPlaying = document.getElementById('currentSong');
-        nowPlaying.innerHTML = `<p>${filename}</p>`;
-
-        playBtn.innerHTML = '<i class="fas fa-pause"></i>';
-        document.querySelector('.playback-btn i').className = 'fas fa-pause';
-
-        // Add timeupdate event listener for seek bar
-        audio.addEventListener('timeupdate', updateSeekBar);
-        // Add loadedmetadata event listener for duration
-        audio.addEventListener('loadedmetadata', () => {
-          document.getElementById('duration').textContent = formatTime(audio.duration);
-        });
-
-        audio.addEventListener('play', () => {
-          playBtn.innerHTML = '<i class="fas fa-pause"></i>';
-          document.querySelector('.playback-btn i').className = 'fas fa-pause';
-        });
-
-        audio.addEventListener('pause', () => {
-          playBtn.innerHTML = '<i class="fas fa-play"></i>';
-          document.querySelector('.playback-btn i').className = 'fas fa-play';
-        });
-
-        audio.addEventListener('ended', () => {
-          playBtn.innerHTML = '<i class="fas fa-play"></i>';
-          document.querySelector('.playback-btn i').className = 'fas fa-play';
           currentAudio = null;
-          currentAudioId = null;
-          document.getElementById('currentSong').innerHTML = '';
-          resetSeekBar();
+        }
+        
+        currentAudio = new Audio(file.secure_url);
+        console.log('Created new Audio element with URL:', file.secure_url); // Debug log
+        
+        currentAudio.addEventListener('error', (e) => {
+          console.error('Audio playback error:', e); // Debug log for audio errors
         });
+        
+        currentAudio.addEventListener('loadeddata', () => {
+          console.log('Audio data loaded successfully'); // Debug log for successful load
+           // Add timeupdate event listener for seek bar once data is loaded
+          currentAudio.addEventListener('timeupdate', updateSeekBar);
+          // Add loadedmetadata event listener for duration
+          currentAudio.addEventListener('loadedmetadata', () => {
+            document.getElementById('duration').textContent = formatTime(currentAudio.duration);
+          });
+          // Add ended event listener
+          currentAudio.addEventListener('ended', () => {
+            const playedButton = document.querySelector(`.file-item button.play-btn[data-id="${currentAudioId}"]`);
+             if (playedButton) {
+                playedButton.querySelector('i').className = 'fas fa-play';
+             }
+            if (globalPlaybackBtnIcon) globalPlaybackBtnIcon.className = 'fas fa-play';
+            currentAudio = null;
+            currentAudioId = null;
+            document.getElementById('currentSong').textContent = '';
+            resetSeekBar();
+          });
+        });
+        
+        currentAudioId = fileId;
+        currentAudio.play();
 
-        audio.play();
+        // Update icons
+        if (clickedButton) clickedButton.querySelector('i').className = 'fas fa-pause';
+        if (globalPlaybackBtnIcon) globalPlaybackBtnIcon.className = 'fas fa-pause';
+
+        document.getElementById('currentSong').textContent = filename;
       }
     }
 
