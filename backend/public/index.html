@@ -378,23 +378,23 @@
       filesToDisplay.forEach(file => {
         const fileElement = document.createElement('div');
         fileElement.className = 'file-item';
-        fileElement.dataset.id = file._id;
+        fileElement.dataset.id = file.id;
         fileElement.innerHTML = `
           <div class="file-info">
             <h3>${file.filename}</h3>
             <span class="upload-date">${new Date(file.uploadDate).toLocaleDateString()}</span>
           </div>
           <div class="file-actions">
-            <button data-id="${file._id}" class="play-btn">
+            <button data-id="${file.id}" class="play-btn">
               <i class="fas fa-play"></i>
             </button>
-            <button data-id="${file._id}" class="playlist-btn">
+            <button data-id="${file.id}" class="playlist-btn">
               <i class="fas fa-list-ul"></i>
             </button>
-            <button data-id="${file._id}" class="favorite-btn ${file.isFavorite ? 'active' : ''}">
+            <button data-id="${file.id}" class="favorite-btn ${file.isFavorite ? 'active' : ''}">
               <i class="fas fa-heart"></i>
             </button>
-            <button data-id="${file._id}" class="share-btn">
+            <button data-id="${file.id}" class="share-btn">
               <i class="fas fa-share-alt"></i>
             </button>
           </div>
