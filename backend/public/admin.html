@@ -249,10 +249,10 @@
                   <span class="upload-date">${new Date(file.uploadDate).toLocaleDateString()}</span>
                 </div>
                 <div class="file-actions">
-                  <button onclick="renameFile('${file._id}', '${file.filename}')" class="rename-btn">
+                  <button data-id="${file._id}" data-filename="${file.filename}" class="rename-btn">
                     <i class="fas fa-edit"></i> Rename
                   </button>
-                  <button onclick="deleteFile('${file._id}')" class="delete-btn">
+                  <button data-id="${file._id}" class="delete-btn">
                     <i class="fas fa-trash"></i> Delete
                   </button>
                 </div>
@@ -260,7 +260,26 @@
             `;
             fileList.appendChild(fileElement);
           });
+          // Add event listeners after the files are loaded
+          addAdminButtonListeners();
         });
+    }
+
+    function addAdminButtonListeners() {
+      document.querySelectorAll('.rename-btn').forEach(button => {
+        button.addEventListener('click', function() {
+          const id = this.dataset.id;
+          const oldFilename = this.dataset.filename;
+          renameFile(id, oldFilename);
+        });
+      });
+
+      document.querySelectorAll('.delete-btn').forEach(button => {
+        button.addEventListener('click', function() {
+          const id = this.dataset.id;
+          deleteFile(id);
+        });
+      });
     }
 
     function uploadFile(event) {
