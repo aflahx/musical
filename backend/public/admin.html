@@ -266,6 +266,7 @@
     }
 
     function addAdminButtonListeners() {
+      console.log('Adding admin button listeners');
       document.querySelectorAll('.rename-btn').forEach(button => {
         button.addEventListener('click', function() {
           const id = this.dataset.id;
