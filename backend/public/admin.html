@@ -331,6 +331,7 @@
     }
 
     function deleteFile(id) {
+      console.log('Attempting to delete file with ID:', id);
       if (confirm('Are you sure you want to delete this file?')) {
         fetch(`/admin/files/${id}`, {
           method: 'DELETE'
@@ -338,19 +339,21 @@
         .then(response => response.json())
         .then(data => {
           if (data.success) {
+            alert('File deleted successfully!');
             loadFiles();
           } else {
-            alert('Error deleting file');
+            alert('Error deleting file: ' + (data.error || 'Unknown error'));
           }
         })
         .catch(error => {
-          console.error('Error:', error);
-          alert('Error deleting file');
+          console.error('Error in deleteFile fetch:', error);
+          alert('Error deleting file. Please check console for details.');
         });
       }
     }
 
     function renameFile(id, oldFilename) {
+      console.log('Attempting to rename file with ID:', id, 'to', oldFilename);
       const newFilename = prompt('Enter new filename:', oldFilename);
       if (newFilename && newFilename !== oldFilename) {
         fetch(`/admin/files/${id}`, {
@@ -363,14 +366,15 @@
         .then(response => response.json())
         .then(data => {
           if (data.success) {
+            alert('File renamed successfully!');
             loadFiles();
           } else {
-            alert('Error renaming file');
+            alert('Error renaming file: ' + (data.error || 'Unknown error'));
           }
         })
         .catch(error => {
-          console.error('Error:', error);
-          alert('Error renaming file');
+          console.error('Error in renameFile fetch:', error);
+          alert('Error renaming file. Please check console for details.');
         });
       }
     }
