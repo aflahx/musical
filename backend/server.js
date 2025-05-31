@@ -86,12 +86,13 @@ app.post('/admin/upload', async (req, res) => {
   }
 
   const file = req.files.audioFile;
-  console.log('File received:', file.name, 'Size:', file.size);
+  console.log('File received:', file.name, 'Size:', file.size, 'Type:', file.mimetype);
 
   // Validate file type
-  if (!file.mimetype.startsWith('audio/')) {
+  const allowedTypes = ['audio/mpeg', 'audio/wav', 'audio/ogg', 'audio/ogg; codecs=opus'];
+  if (!allowedTypes.includes(file.mimetype)) {
     console.log('Invalid file type:', file.mimetype);
-    return res.status(400).json({ error: 'Only audio files are allowed' });
+    return res.status(400).json({ error: 'Only MP3, WAV, and OGG audio files are allowed' });
   }
 
   const filename = file.name;
