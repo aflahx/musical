@@ -18,8 +18,10 @@ app.use(fileUpload({
 }));
 app.use(express.static(path.join(__dirname, 'public')));
 
-// Use Render's persistent disk for uploads
-const uploadsDir = path.join(__dirname, 'uploads');
+// Use Render's persistent disk for uploads if available, otherwise use local directory
+const uploadsDir = process.env.RENDER_VOLUME_MOUNT_PATH 
+  ? path.join(process.env.RENDER_VOLUME_MOUNT_PATH, 'uploads')
+  : path.join(__dirname, 'uploads');
 
 // Create uploads directory if it doesn't exist
 if (!fs.existsSync(uploadsDir)) {
