@@ -45,34 +45,10 @@
         <i class="fas fa-music"></i>
         All Songs
       </button>
-      <button class="tab-btn" onclick="showTab('favorites')">
-        <i class="fas fa-heart"></i>
-        Favorites
-      </button>
-      <button class="tab-btn" onclick="showTab('playlist')">
-        <i class="fas fa-list"></i>
-        Playlist
-      </button>
     </div>
 
     <div id="allSongs" class="tab-content active">
       <div id="files" class="files-grid"></div>
-    </div>
-
-    <div id="favorites" class="tab-content">
-      <div id="favoriteFiles" class="files-grid"></div>
-    </div>
-
-    <div id="playlist" class="tab-content">
-      <div class="playlist-controls">
-        <button onclick="shufflePlaylist()" class="control-btn">
-          <i class="fas fa-random"></i> Shuffle
-        </button>
-        <button onclick="clearPlaylist()" class="control-btn">
-          <i class="fas fa-trash"></i> Clear
-        </button>
-      </div>
-      <div id="playlistFiles" class="files-grid"></div>
     </div>
 
     <div id="nowPlaying" class="now-playing">
@@ -175,20 +151,13 @@
     let currentAudio = null;
     let currentAudioId = null;
     let allFiles = [];
-    let playlist = [];
-    let currentPlaylistIndex = -1;
     let isGridView = true;
 
-    // Load saved theme and playlist on page load
+    // Load saved theme on page load
     document.addEventListener('DOMContentLoaded', () => {
       console.log('DOMContentLoaded fired'); // Debug log
       const savedTheme = localStorage.getItem('theme') || 'light';
       document.body.className = `${savedTheme}-theme`;
-      
-      const savedPlaylist = localStorage.getItem('playlist');
-      if (savedPlaylist) {
-        playlist = JSON.parse(savedPlaylist);
-      }
       
       loadFiles();
 
@@ -239,109 +208,12 @@
     function toggleView() {
       isGridView = !isGridView;
       const filesGrid = document.getElementById('files');
-      const favoriteFilesGrid = document.getElementById('favoriteFiles');
-      const playlistFilesGrid = document.getElementById('playlistFiles');
       
-      [filesGrid, favoriteFilesGrid, playlistFilesGrid].forEach(grid => {
+      [filesGrid].forEach(grid => {
         grid.className = isGridView ? 'files-grid' : 'files-list';
       });
       
       document.querySelector('.view-btn i').className = isGridView ? 'fas fa-th-large' : 'fas fa-list';
-    }
-
-    function addToPlaylist(file) {
-      if (!playlist.some(item => item.id === file.id)) {
-        playlist.push(file);
-        localStorage.setItem('playlist', JSON.stringify(playlist));
-        updatePlaylistDisplay();
-      }
-    }
-
-    function removeFromPlaylist(fileId) {
-      playlist = playlist.filter(file => file.id !== fileId);
-      localStorage.setItem('playlist', JSON.stringify(playlist));
-      updatePlaylistDisplay();
-    }
-
-    function updatePlaylistDisplay() {
-      const playlistDiv = document.getElementById('playlistFiles');
-      playlistDiv.innerHTML = '';
-      
-      playlist.forEach((file, index) => {
-        const fileElement = createFileElement(file);
-        const removeBtn = document.createElement('button');
-        removeBtn.className = 'remove-btn';
-        removeBtn.innerHTML = '<i class="fas fa-times"></i>';
-        removeBtn.onclick = () => removeFromPlaylist(file.id);
-        fileElement.querySelector('.file-controls').appendChild(removeBtn);
-        playlistDiv.appendChild(fileElement);
-      });
-    }
-
-    function shufflePlaylist() {
-      for (let i = playlist.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [playlist[i], playlist[j]] = [playlist[j], playlist[i]];
-      }
-      localStorage.setItem('playlist', JSON.stringify(playlist));
-      updatePlaylistDisplay();
-    }
-
-    function clearPlaylist() {
-      if (confirm('Are you sure you want to clear the playlist?')) {
-        playlist = [];
-        localStorage.removeItem('playlist');
-        updatePlaylistDisplay();
-      }
-    }
-
-    function previousTrack() {
-      if (playlist.length === 0) return;
-      
-      currentPlaylistIndex = (currentPlaylistIndex - 1 + playlist.length) % playlist.length;
-      const file = playlist[currentPlaylistIndex];
-      togglePlay(file.id, file.filename);
-    }
-
-    function nextTrack() {
-      if (playlist.length === 0) return;
-      
-      currentPlaylistIndex = (currentPlaylistIndex + 1) % playlist.length;
-      const file = playlist[currentPlaylistIndex];
-      togglePlay(file.id, file.filename);
-    }
-
-    function toggleMute() {
-      if (currentAudio) {
-        currentAudio.muted = !currentAudio.muted;
-        const volumeIcon = document.querySelector('.volume-control i');
-        volumeIcon.className = currentAudio.muted ? 'fas fa-volume-mute' : 'fas fa-volume-up';
-      }
-    }
-
-    function adjustVolumeByKey(delta) {
-      if (currentAudio) {
-        const volumeSlider = document.getElementById('volumeSlider');
-        const newVolume = Math.max(0, Math.min(100, parseInt(volumeSlider.value) + delta));
-        volumeSlider.value = newVolume;
-        adjustVolume();
-      }
-    }
-
-    function toggleShortcuts() {
-      const modal = document.getElementById('shortcutsModal');
-      modal.classList.toggle('active');
-    }
-
-    function toggleTheme() {
-      const body = document.body;
-      const currentTheme = body.classList.contains('dark-theme') ? 'dark' : 'light';
-      const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
-      
-      body.classList.remove(`${currentTheme}-theme`);
-      body.classList.add(`${newTheme}-theme`);
-      
-      localStorage.setItem('theme', newTheme);
     }
 
     function showTab(tabName) {
@@ -351,8 +223,8 @@
       document.querySelectorAll('.tab-btn').forEach(btn => {
         btn.classList.remove('active');
       });
-      document.getElementById(tabName === 'all' ? 'allSongs' : tabName === 'favorites' ? 'favorites' : 'playlist').classList.add('active');
-      event.target.closest('.tab-btn').classList.add('active');
+      document.getElementById('allSongs').classList.add('active');
+      document.querySelector('.tab-btn').classList.add('active');
     }
 
     async function loadFiles() {
@@ -364,7 +236,6 @@
         console.log('Files received from server (after json parse):', files); // Debug log
         allFiles = files;
         displayFiles(allFiles);
-        loadFavorites();
       } catch (err) {
         console.error('Error loading files:', err);
       }
@@ -387,12 +258,6 @@
           <div class="file-actions">
             <button data-id="${file.id}" class="play-btn">
               <i class="fas fa-play"></i>
-            </button>
-            <button data-id="${file.id}" class="playlist-btn">
-              <i class="fas fa-list-ul"></i>
-            </button>
-            <button data-id="${file.id}" class="favorite-btn ${file.isFavorite ? 'active' : ''}">
-              <i class="fas fa-heart"></i>
             </button>
             <button data-id="${file.id}" class="share-btn">
               <i class="fas fa-share-alt"></i>
@@ -426,67 +291,10 @@
       if (targetButton.classList.contains('play-btn')) {
         console.log('Calling togglePlay'); // Debug log
         togglePlay(file.id, file.filename, targetButton); // Pass the clicked button
-      } else if (targetButton.classList.contains('playlist-btn')) {
-        console.log('Calling addToPlaylist'); // Debug log
-        addToPlaylist({ id: file.id, filename: file.filename });
-      } else if (targetButton.classList.contains('favorite-btn')) {
-        console.log('Calling toggleFavorite'); // Debug log
-        toggleFavorite(file.id);
       } else if (targetButton.classList.contains('share-btn')) {
         console.log('Calling shareSong'); // Debug log
         shareSong(file.id);
       }
-    }
-
-    function loadFavorites() {
-      fetch('/favorites')
-        .then(response => response.json())
-        .then(favoriteFiles => {
-          const favoriteFileIds = favoriteFiles.map(f => f._id);
-          allFiles = allFiles.map(file => ({
-            ...file,
-            isFavorite: favoriteFileIds.includes(file._id)
-          }));
-          displayFiles(allFiles);
-          displayFavoriteFiles();
-        })
-        .catch(error => {
-          console.error('Error loading favorites:', error);
-        });
-    }
-
-    function displayFavoriteFiles() {
-      const favoriteFilesList = document.getElementById('favoriteFiles');
-      favoriteFilesList.innerHTML = '';
-
-      const favoriteFiles = allFiles.filter(file => file.isFavorite);
-
-      favoriteFiles.forEach(file => {
-        const fileElement = document.createElement('div');
-        fileElement.className = 'file-item';
-        fileElement.dataset.id = file._id;
-        fileElement.innerHTML = `
-          <div class="file-info">
-            <h3>${file.filename}</h3>
-            <span class="upload-date">${new Date(file.uploadDate).toLocaleDateString()}</span>
-          </div>
-          <div class="file-actions">
-            <button data-id="${file._id}" class="play-btn">
-              <i class="fas fa-play"></i>
-            </button>
-            <button data-id="${file._id}" class="playlist-btn">
-              <i class="fas fa-list-ul"></i>
-            </button>
-            <button data-id="${file._id}" class="favorite-btn active">
-              <i class="fas fa-heart"></i>
-            </button>
-            <button data-id="${file._id}" class="share-btn">
-              <i class="fas fa-share-alt"></i>
-            </button>
-          </div>
-        `;
-        favoriteFilesList.appendChild(fileElement);
-      });
     }
 
     function filterFiles() {
@@ -621,7 +429,7 @@
 
     function togglePlayback() {
       if (currentAudio) {
-        togglePlay(currentAudioId, currentAudio.src.split('/').pop());
+        togglePlay(currentAudioId, document.getElementById('currentSong').textContent);
       }
     }
 
@@ -632,20 +440,53 @@
       }
     }
 
-    function toggleFavorite(id) {
-      fetch(`/files/${id}/favorite`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ isFavorite: !allFiles.find(f => f._id === id).isFavorite })
-      })
-      .then(response => response.json())
-      .then(data => {
-        if (data.success) {
-          loadFiles();
-        }
-      });
+    function toggleMute() {
+      if (currentAudio) {
+        currentAudio.muted = !currentAudio.muted;
+        const volumeIcon = document.querySelector('.volume-control i');
+        volumeIcon.className = currentAudio.muted ? 'fas fa-volume-mute' : 'fas fa-volume-up';
+      }
+    }
+
+    function adjustVolumeByKey(delta) {
+      if (currentAudio) {
+        const volumeSlider = document.getElementById('volumeSlider');
+        const newVolume = Math.max(0, Math.min(100, parseInt(volumeSlider.value) + delta));
+        volumeSlider.value = newVolume;
+        adjustVolume();
+      }
+    }
+
+    function toggleShortcuts() {
+      const modal = document.getElementById('shortcutsModal');
+      modal.classList.toggle('active');
+    }
+
+    function toggleTheme() {
+      const body = document.body;
+      const currentTheme = body.classList.contains('dark-theme') ? 'dark' : 'light';
+      const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+      
+      body.classList.remove(`${currentTheme}-theme`);
+      body.classList.add(`${newTheme}-theme`);
+      
+      localStorage.setItem('theme', newTheme);
+    }
+
+    function previousTrack() {
+      if (allFiles.length === 0) return;
+      
+      currentAudioId = (currentAudioId - 1 + allFiles.length) % allFiles.length;
+      const file = allFiles[currentAudioId];
+      togglePlay(file.id, file.filename);
+    }
+
+    function nextTrack() {
+      if (allFiles.length === 0) return;
+      
+      currentAudioId = (currentAudioId + 1) % allFiles.length;
+      const file = allFiles[currentAudioId];
+      togglePlay(file.id, file.filename);
     }
 
     function shareSong(id) {
@@ -693,6 +534,9 @@
         closeShareModal();
       }
     }
+
+    // Removed functions: addToPlaylist, removeFromPlaylist, updatePlaylistDisplay, shufflePlaylist, clearPlaylist, loadFavorites, displayFavoriteFiles, toggleFavorite
+
   </script>
 </body>
-</html> 
+</html>
