@@ -233,7 +233,7 @@
     }
 
     function loadFiles() {
-      fetch('/admin/files')
+      fetch('/files')
         .then(response => response.json())
         .then(files => {
           const fileList = document.getElementById('fileList');
