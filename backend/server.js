@@ -63,16 +63,26 @@ mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/music-pla
 
 // Admin routes
 app.post('/admin/login', async (req, res) => {
+  console.log('Login attempt:', req.body);
   const { username, password } = req.body;
+  
+  if (!username || !password) {
+    console.log('Missing username or password');
+    return res.status(400).json({ error: 'Username and password are required' });
+  }
+
   try {
     const admin = await Admin.findOne({ username, password });
+    console.log('Login result:', admin ? 'Success' : 'Failed');
+    
     if (admin) {
       res.json({ success: true });
     } else {
-      res.status(401).json({ error: 'Invalid credentials' });
+      res.status(401).json({ error: 'Invalid username or password' });
     }
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error('Login error:', err);
+    res.status(500).json({ error: 'Server error during login' });
   }
 });
 
