@@ -250,10 +250,10 @@
                   <span class="upload-date">${new Date(file.uploadDate).toLocaleDateString()}</span>
                 </div>
                 <div class="file-actions">
-                  <button data-id="${file._id}" data-filename="${file.filename}" class="rename-btn">
+                  <button data-id="${file.id}" data-filename="${file.filename}" class="rename-btn">
                     <i class="fas fa-edit"></i> Rename
                   </button>
-                  <button data-id="${file._id}" class="delete-btn">
+                  <button data-id="${file.id}" class="delete-btn">
                     <i class="fas fa-trash"></i> Delete
                   </button>
                 </div>
