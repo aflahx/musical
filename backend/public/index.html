@@ -358,56 +358,95 @@
         .then(response => response.json())
         .then(files => {
           allFiles = files;
-          displayFiles(files);
+          displayFiles(allFiles);
+          loadFavorites();
+        })
+        .catch(error => {
+          console.error('Error loading files:', error);
         });
     }
 
-    function displayFiles(files) {
-      const filesDiv = document.getElementById('files');
-      const favoritesDiv = document.getElementById('favoriteFiles');
-      filesDiv.innerHTML = '';
-      favoritesDiv.innerHTML = '';
+    function displayFiles(filesToDisplay) {
+      const fileList = document.getElementById('files');
+      fileList.innerHTML = '';
 
-      files.forEach(file => {
-        const fileElement = createFileElement(file);
-        filesDiv.appendChild(fileElement);
-
-        if (file.isFavorite) {
-          const favoriteElement = createFileElement(file);
-          favoritesDiv.appendChild(favoriteElement);
-        }
-      });
-    }
-
-    function createFileElement(file) {
-      const fileElement = document.createElement('div');
-      fileElement.className = 'file-item';
-      fileElement.innerHTML = `
-        <div class="file-info">
-          <div class="file-header">
+      filesToDisplay.forEach(file => {
+        const fileElement = document.createElement('div');
+        fileElement.className = 'file-item';
+        fileElement.dataset.id = file._id;
+        fileElement.innerHTML = `
+          <div class="file-info">
             <h3>${file.filename}</h3>
             <span class="upload-date">${new Date(file.uploadDate).toLocaleDateString()}</span>
           </div>
-          <div class="file-controls">
-            <button onclick="togglePlay(${file.id}, '${file.filename}')" class="play-btn" id="playBtn-${file.id}">
+          <div class="file-actions">
+            <button onclick="togglePlay('${file._id}', '${file.filename}')" class="play-btn">
               <i class="fas fa-play"></i>
             </button>
-            <button onclick="toggleFavorite(${file.id}, ${file.isFavorite})" class="favorite-btn ${file.isFavorite ? 'active' : ''}">
+            <button onclick="addToPlaylist({ id: '${file._id}', filename: '${file.filename}' })" class="playlist-btn">
+              <i class="fas fa-list-ul"></i>
+            </button>
+            <button onclick="toggleFavorite('${file._id}')" class="favorite-btn ${file.isFavorite ? 'active' : ''}">
               <i class="fas fa-heart"></i>
             </button>
-            <button onclick="addToPlaylist(${JSON.stringify(file).replace(/"/g, '&quot;')})" class="playlist-btn">
-              <i class="fas fa-plus"></i>
-            </button>
-            <button onclick="shareSong(${file.id}, '${file.filename}')" class="share-btn">
+            <button onclick="shareSong('${file._id}')" class="share-btn">
               <i class="fas fa-share-alt"></i>
             </button>
-            <a href="/uploads/${file.filename}" download class="download-btn">
-              <i class="fas fa-download"></i>
-            </a>
           </div>
-        </div>
-      `;
-      return fileElement;
+        `;
+        fileList.appendChild(fileElement);
+      });
+    }
+
+    function loadFavorites() {
+      fetch('/favorites')
+        .then(response => response.json())
+        .then(favoriteFiles => {
+          const favoriteFileIds = favoriteFiles.map(f => f._id);
+          allFiles = allFiles.map(file => ({
+            ...file,
+            isFavorite: favoriteFileIds.includes(file._id)
+          }));
+          displayFiles(allFiles);
+          displayFavoriteFiles();
+        })
+        .catch(error => {
+          console.error('Error loading favorites:', error);
+        });
+    }
+
+    function displayFavoriteFiles() {
+      const favoriteFilesList = document.getElementById('favoriteFiles');
+      favoriteFilesList.innerHTML = '';
+
+      const favoriteFiles = allFiles.filter(file => file.isFavorite);
+
+      favoriteFiles.forEach(file => {
+        const fileElement = document.createElement('div');
+        fileElement.className = 'file-item';
+        fileElement.dataset.id = file._id;
+        fileElement.innerHTML = `
+          <div class="file-info">
+            <h3>${file.filename}</h3>
+            <span class="upload-date">${new Date(file.uploadDate).toLocaleDateString()}</span>
+          </div>
+          <div class="file-actions">
+            <button onclick="togglePlay('${file._id}', '${file.filename}')" class="play-btn">
+              <i class="fas fa-play"></i>
+            </button>
+            <button onclick="addToPlaylist({ id: '${file._id}', filename: '${file.filename}' })" class="playlist-btn">
+              <i class="fas fa-list-ul"></i>
+            </button>
+            <button onclick="toggleFavorite('${file._id}')" class="favorite-btn active">
+              <i class="fas fa-heart"></i>
+            </button>
+            <button onclick="shareSong('${file._id}')" class="share-btn">
+              <i class="fas fa-share-alt"></i>
+            </button>
+          </div>
+        `;
+        favoriteFilesList.appendChild(fileElement);
+      });
     }
 
     function filterFiles() {
@@ -545,13 +584,13 @@
       }
     }
 
-    function toggleFavorite(id, isFavorite) {
+    function toggleFavorite(id) {
       fetch(`/files/${id}/favorite`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({ isFavorite: !isFavorite })
+        body: JSON.stringify({ isFavorite: !allFiles.find(f => f._id === id).isFavorite })
       })
       .then(response => response.json())
       .then(data => {
@@ -561,7 +600,7 @@
       });
     }
 
-    function shareSong(id, filename) {
+    function shareSong(id) {
       const shareLink = `${window.location.origin}/share/${id}`;
       document.getElementById('shareLink').value = shareLink;
       document.getElementById('shareModal').classList.add('active');
