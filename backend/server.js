@@ -128,10 +128,12 @@ app.post('/admin/upload', async (req, res) => {
 
 // Delete file
 app.delete('/admin/files/:id', async (req, res) => {
+  console.log(`Delete request received for ID: ${req.params.id}`);
   try {
     const fileId = new mongoose.Types.ObjectId(req.params.id);
     const file = await File.findById(fileId);
     if (!file) {
+      console.log(`File not found for ID: ${req.params.id}`);
       return res.status(404).json({ error: 'File not found' });
     }
 
@@ -140,26 +142,30 @@ app.delete('/admin/files/:id', async (req, res) => {
     await File.findByIdAndDelete(fileId);
     await Favorite.deleteOne({ fileId: fileId });
     
+    console.log(`File and favorite deleted for ID: ${req.params.id}`);
     res.json({ success: true });
   } catch (err) {
-    console.error('Delete file error:', err);
+    console.error(`Delete file error for ID: ${req.params.id}`, err);
     res.status(500).json({ error: err.message });
   }
 });
 
 // Rename file
 app.put('/admin/files/:id', async (req, res) => {
+  console.log(`Rename request received for ID: ${req.params.id} with body:`, req.body);
   try {
     const fileId = new mongoose.Types.ObjectId(req.params.id);
     const { newFilename } = req.body;
     
     if (!newFilename) {
+      console.log('New filename is missing');
       return res.status(400).json({ error: 'New filename is required' });
     }
 
     const file = await File.findById(fileId);
     
     if (!file) {
+      console.log(`File not found for ID: ${req.params.id}`);
       return res.status(404).json({ error: 'File not found' });
     }
 
@@ -168,6 +174,7 @@ app.put('/admin/files/:id', async (req, res) => {
 
     // Check if a file with the new filename already exists
     if (fs.existsSync(newPath)) {
+      console.log(`File with new filename already exists: ${newFilename}`);
       return res.status(400).json({ error: 'File with this name already exists' });
     }
 
@@ -175,9 +182,10 @@ app.put('/admin/files/:id', async (req, res) => {
     file.filename = newFilename;
     await file.save();
     
+    console.log(`File renamed for ID: ${req.params.id} to ${newFilename}`);
     res.json({ success: true });
   } catch (err) {
-    console.error('Rename file error:', err);
+    console.error(`Rename file error for ID: ${req.params.id}`, err);
     res.status(500).json({ error: err.message });
   }
 });
