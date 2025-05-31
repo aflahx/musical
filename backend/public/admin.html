@@ -236,6 +236,7 @@
       fetch('/files')
         .then(response => response.json())
         .then(files => {
+          console.log('Files received from server:', files);
           const fileList = document.getElementById('fileList');
           fileList.innerHTML = '';
 
