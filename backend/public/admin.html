@@ -260,26 +260,25 @@
             `;
             fileList.appendChild(fileElement);
           });
-          // Add event listeners after the files are loaded
-          addAdminButtonListeners();
+          // Event delegation for rename and delete buttons
+          setupAdminEventDelegation();
         });
     }
 
-    function addAdminButtonListeners() {
-      console.log('Adding admin button listeners');
-      document.querySelectorAll('.rename-btn').forEach(button => {
-        button.addEventListener('click', function() {
-          const id = this.dataset.id;
-          const oldFilename = this.dataset.filename;
-          renameFile(id, oldFilename);
-        });
-      });
+    function setupAdminEventDelegation() {
+      const fileList = document.getElementById('fileList');
+      fileList.addEventListener('click', function(event) {
+        const targetButton = event.target.closest('button');
+        if (!targetButton) return;
 
-      document.querySelectorAll('.delete-btn').forEach(button => {
-        button.addEventListener('click', function() {
-          const id = this.dataset.id;
-          deleteFile(id);
-        });
+        const fileId = targetButton.dataset.id;
+
+        if (targetButton.classList.contains('rename-btn')) {
+          const oldFilename = targetButton.dataset.filename;
+          renameFile(fileId, oldFilename);
+        } else if (targetButton.classList.contains('delete-btn')) {
+          deleteFile(fileId);
+        }
       });
     }
 
