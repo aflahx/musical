@@ -57,14 +57,8 @@
         <div id="currentSong"></div>
       </div>
       <div class="now-playing-controls">
-        <button onclick="previousTrack()" class="control-btn">
-          <i class="fas fa-step-backward"></i>
-        </button>
         <button onclick="togglePlayback()" class="playback-btn">
           <i class="fas fa-play"></i>
-        </button>
-        <button onclick="nextTrack()" class="control-btn">
-          <i class="fas fa-step-forward"></i>
         </button>
         <div class="seek-container">
           <span id="currentTime">0:00</span>
@@ -92,22 +86,6 @@
             <div class="shortcut-item">
               <span class="key">Space</span>
               <span class="description">Play/Pause</span>
-            </div>
-            <div class="shortcut-item">
-              <span class="key">←</span>
-              <span class="description">Previous Track</span>
-            </div>
-            <div class="shortcut-item">
-              <span class="key">→</span>
-              <span class="description">Next Track</span>
-            </div>
-            <div class="shortcut-item">
-              <span class="key">↑</span>
-              <span class="description">Volume Up</span>
-            </div>
-            <div class="shortcut-item">
-              <span class="key">↓</span>
-              <span class="description">Volume Down</span>
             </div>
             <div class="shortcut-item">
               <span class="key">M</span>
@@ -186,18 +164,6 @@
             e.preventDefault();
             togglePlayback();
             break;
-          case 'ArrowLeft':
-            previousTrack();
-            break;
-          case 'ArrowRight':
-            nextTrack();
-            break;
-          case 'ArrowUp':
-            adjustVolumeByKey(5);
-            break;
-          case 'ArrowDown':
-            adjustVolumeByKey(-5);
-            break;
           case 'KeyM':
             toggleMute();
             break;
@@ -259,6 +225,9 @@
             <button data-id="${file.id}" class="play-btn">
               <i class="fas fa-play"></i>
             </button>
+            <button data-id="${file.id}" class="favorite-btn ${file.isFavorite ? 'active' : ''}">
+              <i class="fas fa-heart"></i>
+            </button>
             <button data-id="${file.id}" class="share-btn">
               <i class="fas fa-share-alt"></i>
             </button>
@@ -291,6 +260,9 @@
       if (targetButton.classList.contains('play-btn')) {
         console.log('Calling togglePlay'); // Debug log
         togglePlay(file.id, file.filename, targetButton); // Pass the clicked button
+      } else if (targetButton.classList.contains('favorite-btn')) {
+        console.log('Calling toggleFavorite'); // Debug log
+        toggleFavorite(file.id);
       } else if (targetButton.classList.contains('share-btn')) {
         console.log('Calling shareSong'); // Debug log
         shareSong(file.id);
@@ -448,45 +420,49 @@
       }
     }
 
-    function adjustVolumeByKey(delta) {
-      if (currentAudio) {
-        const volumeSlider = document.getElementById('volumeSlider');
-        const newVolume = Math.max(0, Math.min(100, parseInt(volumeSlider.value) + delta));
-        volumeSlider.value = newVolume;
-        adjustVolume();
+    function toggleFavorite(id) {
+      console.log('Toggling favorite for ID:', id); // Debug log
+      const file = allFiles.find(f => f.id === id);
+      if (!file) {
+          console.error('File not found for toggling favorite:', id);
+          return;
       }
-    }
 
-    function toggleShortcuts() {
-      const modal = document.getElementById('shortcutsModal');
-      modal.classList.toggle('active');
-    }
+      const isFavoriting = !file.isFavorite;
+      console.log(`Current favorite status: ${file.isFavorite}, New status: ${isFavoriting}`); // Debug log
 
-    function toggleTheme() {
-      const body = document.body;
-      const currentTheme = body.classList.contains('dark-theme') ? 'dark' : 'light';
-      const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
-      
-      body.classList.remove(`${currentTheme}-theme`);
-      body.classList.add(`${newTheme}-theme`);
-      
-      localStorage.setItem('theme', newTheme);
-    }
-
-    function previousTrack() {
-      if (allFiles.length === 0) return;
-      
-      currentAudioId = (currentAudioId - 1 + allFiles.length) % allFiles.length;
-      const file = allFiles[currentAudioId];
-      togglePlay(file.id, file.filename);
-    }
-
-    function nextTrack() {
-      if (allFiles.length === 0) return;
-      
-      currentAudioId = (currentAudioId + 1) % allFiles.length;
-      const file = allFiles[currentAudioId];
-      togglePlay(file.id, file.filename);
+      fetch(`/files/${id}/favorite`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ isFavorite: isFavoriting })
+      })
+      .then(response => {
+          console.log('Favorite toggle response status:', response.status); // Debug log
+          if (!response.ok) {
+              throw new Error(`HTTP error! status: ${response.status}`);
+          }
+          return response.json();
+      })
+      .then(data => {
+        console.log('Favorite toggle response data:', data); // Debug log
+        if (data.success) {
+          console.log('Favorite status toggled successfully, reloading files...'); // Debug log
+          // Update the isFavorite status in the local allFiles array
+          const fileIndex = allFiles.findIndex(f => f.id === id);
+          if (fileIndex !== -1) {
+              allFiles[fileIndex].isFavorite = isFavoriting;
+              // Re-render the files to update the heart icon
+              displayFiles(allFiles);
+          }
+        } else {
+            console.error('Favorite toggle reported failure:', data);
+        }
+      })
+      .catch(error => {
+        console.error('Error toggling favorite:', error);
+      });
     }
 
     function shareSong(id) {
@@ -534,8 +510,6 @@
         closeShareModal();
       }
     }
-
-    // Removed functions: addToPlaylist, removeFromPlaylist, updatePlaylistDisplay, shufflePlaylist, clearPlaylist, loadFavorites, displayFavoriteFiles, toggleFavorite
 
   </script>
 </body>
