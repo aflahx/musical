@@ -250,6 +250,9 @@
                   <span class="upload-date">${new Date(file.uploadDate).toLocaleDateString()}</span>
                 </div>
                 <div class="file-actions">
+                  <button data-id="${file.id}" data-secure-url="${file.secure_url}" class="play-btn">
+                    <i class="fas fa-play"></i>
+                  </button>
                   <button data-id="${file.id}" data-filename="${file.filename}" class="rename-btn">
                     <i class="fas fa-edit"></i> Rename
                   </button>
@@ -261,10 +264,13 @@
             `;
             fileList.appendChild(fileElement);
           });
-          // Event delegation for rename and delete buttons
+          // Event delegation for play, rename, and delete buttons
           setupAdminEventDelegation();
         });
     }
+
+    let currentAdminAudio = null;
+    let currentAdminAudioId = null;
 
     function setupAdminEventDelegation() {
       const fileList = document.getElementById('fileList');
@@ -274,13 +280,62 @@
 
         const fileId = targetButton.dataset.id;
 
-        if (targetButton.classList.contains('rename-btn')) {
+        if (targetButton.classList.contains('play-btn')) {
+          const secureUrl = targetButton.dataset.secureUrl;
+          toggleAdminPlay(fileId, secureUrl, targetButton);
+        } else if (targetButton.classList.contains('rename-btn')) {
           const oldFilename = targetButton.dataset.filename;
           renameFile(fileId, oldFilename);
         } else if (targetButton.classList.contains('delete-btn')) {
           deleteFile(fileId);
         }
       });
+    }
+
+    function toggleAdminPlay(fileId, secureUrl, clickedButton) {
+      console.log('Attempting to play file on admin page:', { fileId, secureUrl });
+
+      if (currentAdminAudio && currentAdminAudioId === fileId) {
+        // Currently playing the same song
+        if (currentAdminAudio.paused) {
+          currentAdminAudio.play();
+          clickedButton.querySelector('i').className = 'fas fa-pause';
+        } else {
+          currentAdminAudio.pause();
+          clickedButton.querySelector('i').className = 'fas fa-play';
+        }
+      } else {
+        // Playing a new song
+        if (currentAdminAudio) {
+          // Pause the previous song and reset its button icon
+          currentAdminAudio.pause();
+          const previousButton = document.querySelector(`#fileList button.play-btn[data-id="${currentAdminAudioId}"]`);
+          if (previousButton) {
+              previousButton.querySelector('i').className = 'fas fa-play';
+          }
+          currentAdminAudio = null;
+        }
+        
+        currentAdminAudio = new Audio(secureUrl);
+        console.log('Created new Admin Audio element with URL:', secureUrl); // Debug log
+        
+        currentAdminAudio.addEventListener('error', (e) => {
+          console.error('Admin Audio playback error:', e); // Debug log for audio errors
+          // Optionally reset the button icon on error
+           if (clickedButton) clickedButton.querySelector('i').className = 'fas fa-play';
+        });
+        
+        currentAdminAudio.addEventListener('ended', () => {
+           console.log('Admin Audio playback ended'); // Debug log
+            if (clickedButton) clickedButton.querySelector('i').className = 'fas fa-play';
+            currentAdminAudio = null;
+            currentAdminAudioId = null;
+        });
+        
+        currentAdminAudioId = fileId;
+        currentAdminAudio.play();
+        if (clickedButton) clickedButton.querySelector('i').className = 'fas fa-pause';
+      }
     }
 
     function uploadFile(event) {
