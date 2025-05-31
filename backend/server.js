@@ -14,9 +14,9 @@ app.use(express.urlencoded({ extended: true }));
 app.use(fileUpload());
 app.use(express.static(path.join(__dirname, 'public')));
 
-// Use Railway's volume for uploads if available, otherwise use local directory
-const uploadsDir = process.env.RAILWAY_VOLUME_MOUNT_PATH 
-  ? path.join(process.env.RAILWAY_VOLUME_MOUNT_PATH, 'uploads')
+// Use Render's persistent disk for uploads if available, otherwise use local directory
+const uploadsDir = process.env.RENDER_DISK_PATH 
+  ? path.join(process.env.RENDER_DISK_PATH, 'uploads')
   : path.join(__dirname, 'uploads');
 
 // Create uploads directory if it doesn't exist
