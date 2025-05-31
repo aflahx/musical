@@ -11,13 +11,15 @@ const PORT = process.env.PORT || 3000;
 // Middleware
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-app.use(fileUpload());
+app.use(fileUpload({
+  limits: { fileSize: 50 * 1024 * 1024 }, // 50MB max file size
+  useTempFiles: true,
+  tempFileDir: '/tmp/'
+}));
 app.use(express.static(path.join(__dirname, 'public')));
 
-// Use Render's persistent disk for uploads if available, otherwise use local directory
-const uploadsDir = process.env.RENDER_DISK_PATH 
-  ? path.join(process.env.RENDER_DISK_PATH, 'uploads')
-  : path.join(__dirname, 'uploads');
+// Use Render's persistent disk for uploads
+const uploadsDir = path.join(__dirname, 'uploads');
 
 // Create uploads directory if it doesn't exist
 if (!fs.existsSync(uploadsDir)) {
@@ -76,22 +78,39 @@ app.post('/admin/login', async (req, res) => {
 
 // Handle file upload
 app.post('/admin/upload', async (req, res) => {
+  console.log('Upload request received');
+  
   if (!req.files || !req.files.audioFile) {
+    console.log('No file in request');
     return res.status(400).json({ error: 'No file uploaded' });
   }
 
   const file = req.files.audioFile;
+  console.log('File received:', file.name, 'Size:', file.size);
+
+  // Validate file type
+  if (!file.mimetype.startsWith('audio/')) {
+    console.log('Invalid file type:', file.mimetype);
+    return res.status(400).json({ error: 'Only audio files are allowed' });
+  }
+
   const filename = file.name;
   const uploadPath = path.join(uploadsDir, filename);
 
   try {
+    console.log('Moving file to:', uploadPath);
     await file.mv(uploadPath);
+    console.log('File moved successfully');
+
     const newFile = await File.create({
       filename,
       uploadDate: new Date()
     });
+    console.log('File record created in database:', newFile._id);
+
     res.json({ id: newFile._id });
   } catch (err) {
+    console.error('Upload error:', err);
     res.status(500).json({ error: err.message });
   }
 });

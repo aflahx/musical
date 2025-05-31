@@ -254,9 +254,21 @@
       event.preventDefault();
       const fileInput = document.getElementById('audioFile');
       const file = fileInput.files[0];
-      
+
       if (!file) {
-        alert('Please select a file');
+        alert('Please select a file to upload');
+        return false;
+      }
+
+      // Validate file type
+      if (!file.type.startsWith('audio/')) {
+        alert('Please select an audio file');
+        return false;
+      }
+
+      // Validate file size (50MB limit)
+      if (file.size > 50 * 1024 * 1024) {
+        alert('File size must be less than 50MB');
         return false;
       }
 
@@ -269,16 +281,17 @@
       })
       .then(response => response.json())
       .then(data => {
-        if (data.id) {
-          fileInput.value = '';
-          loadFiles();
+        if (data.error) {
+          alert('Upload failed: ' + data.error);
         } else {
-          alert('Error uploading file');
+          alert('File uploaded successfully!');
+          fileInput.value = ''; // Clear the file input
+          loadFiles(); // Refresh the file list
         }
       })
       .catch(error => {
         console.error('Error:', error);
-        alert('Error uploading file');
+        alert('Error uploading file. Please try again.');
       });
 
       return false;
