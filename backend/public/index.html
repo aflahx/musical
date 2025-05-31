@@ -357,9 +357,11 @@
 
     async function loadFiles() {
       try {
+        console.log('Fetching files...'); // Debug log
         const response = await fetch('/files');
+        console.log('Fetch response received:', response); // Debug log
         const files = await response.json();
-        console.log('Files received from server:', files); // Debug log
+        console.log('Files received from server (after json parse):', files); // Debug log
         allFiles = files;
         displayFiles(allFiles);
         loadFavorites();
@@ -369,6 +371,7 @@
     }
 
     function displayFiles(filesToDisplay) {
+      console.log('Displaying files...', filesToDisplay); // Debug log
       const fileList = document.getElementById('files');
       fileList.innerHTML = '';
 
@@ -404,20 +407,33 @@
     }
 
     function handleFileAction(event) {
+      console.log('handleFileAction triggered', event); // Debug log
       const targetButton = event.target.closest('button');
-      if (!targetButton) return;
+      if (!targetButton) {
+        console.log('Clicked element is not a button.'); // Debug log
+        return;
+      }
 
       const fileId = targetButton.dataset.id;
+      console.log('Button clicked:', targetButton.className, 'for file ID:', fileId); // Debug log
       const file = allFiles.find(f => f.id === fileId);
-      if (!file) return;
+      if (!file) {
+        console.log('File data not found for ID:', fileId); // Debug log
+        return;
+      }
+      console.log('File data found:', file); // Debug log
 
       if (targetButton.classList.contains('play-btn')) {
+        console.log('Calling togglePlay'); // Debug log
         togglePlay(file.id, file.filename, targetButton); // Pass the clicked button
       } else if (targetButton.classList.contains('playlist-btn')) {
+        console.log('Calling addToPlaylist'); // Debug log
         addToPlaylist({ id: file.id, filename: file.filename });
       } else if (targetButton.classList.contains('favorite-btn')) {
+        console.log('Calling toggleFavorite'); // Debug log
         toggleFavorite(file.id);
       } else if (targetButton.classList.contains('share-btn')) {
+        console.log('Calling shareSong'); // Debug log
         shareSong(file.id);
       }
     }
