@@ -171,6 +171,7 @@
   </div>
 
   <script>
+    console.log('Script tag started'); // Initial debug log
     let currentAudio = null;
     let currentAudioId = null;
     let allFiles = [];
@@ -180,6 +181,7 @@
 
     // Load saved theme and playlist on page load
     document.addEventListener('DOMContentLoaded', () => {
+      console.log('DOMContentLoaded fired'); // Debug log
       const savedTheme = localStorage.getItem('theme') || 'light';
       document.body.className = `${savedTheme}-theme`;
       
